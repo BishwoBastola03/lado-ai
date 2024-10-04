@@ -88,13 +88,22 @@ def upload_image():
     if not file.content_type.startswith('image/'):
         return jsonify({"error": "File is not an image"}), 400
 
-    # Process the image for text extraction
+    # Process the image for text extraction using OCR
     image = Image.open(file)
     extracted_text = pytesseract.image_to_string(image)
 
     # Generate a response based on the extracted text
     chat = model.start_chat(history=[])
     response = chat.send_message(f"{system_instruction}\n\nHuman: {extracted_text}")
+
+    # Optionally, you could also send the extracted text to an external API defined in .env
+    api_endpoint = os.getenv('IMAGE_PROCESSING_API')
+    if api_endpoint:
+        try:
+            api_response = requests.post(api_endpoint, json={"text": extracted_text})
+            api_response_data = api_response.json() if api_response.ok else {}
+        except requests.RequestException as e:
+            print(f"API call failed: {e}")
 
     return jsonify({"response": response.text})
 
