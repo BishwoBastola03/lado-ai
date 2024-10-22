@@ -63,19 +63,25 @@ def perfect():
     chat = model.start_chat(history=[])
     response = chat.send_message(f"{system_instruction}\n\nHuman: {query}")
 
+    # Format the response by replacing newlines with HTML line breaks
+    response_text = response.text.replace('\n', '<br>')
+
+    # Optionally, you can also replace tabs or indentation with HTML spaces
+    response_text = response_text.replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;')
+
     # Call the webhook
     webhook_url = os.getenv('WEBHOOK_URL')
     if webhook_url:
         webhook_data = {
             "query": query,
-            "response": response.text
+            "response": response_text
         }
         try:
             requests.post(webhook_url, json=webhook_data)
         except requests.RequestException as e:
             print(f"Webhook call failed: {e}")
 
-    return jsonify({"response": response.text})
+    return jsonify({"response": response_text})
 
 @app.route('/upload-image', methods=['POST'])
 def upload_image():
@@ -96,6 +102,10 @@ def upload_image():
     chat = model.start_chat(history=[])
     response = chat.send_message(f"{system_instruction}\n\nHuman: {extracted_text}")
 
+    # Format the response for proper display
+    response_text = response.text.replace('\n', '<br>')
+    response_text = response_text.replace('\t', '&nbsp;&nbsp;&nbsp;&nbsp;')
+
     # Optionally, you could also send the extracted text to an external API defined in .env
     api_endpoint = os.getenv('IMAGE_PROCESSING_API')
     if api_endpoint:
@@ -105,7 +115,7 @@ def upload_image():
         except requests.RequestException as e:
             print(f"API call failed: {e}")
 
-    return jsonify({"response": response.text})
+    return jsonify({"response": response_text})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)))
